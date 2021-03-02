@@ -69,8 +69,7 @@ RUN echo source ~/.gdbinit-gef.py >> /home/serene/.gdbinit
 #    bash -c "unzip dist/$(ls -1 dist/) -d $SCHADENFREUDE_INSTALL_DIR"
 
 # sshd_config
-RUN sed -i 's/^#PermitEmptyPasswords .*$/PermitEmptyPasswords yes/g' /etc/ssh/sshd_config && \
-    sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication yes/g' /etc/ssh/sshd_config && \
+RUN sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config && \
     sed -i 's/^#AllowAgentForwarding .*$/AllowAgentForwarding no/g' /etc/ssh/sshd_config && \
     sed -i 's/^#AllowTcpForwarding .*$/AllowTcpForwarding no/g' /etc/ssh/sshd_config && \
     sed -i 's/^X11Forwarding .*$/X11Forwarding no/g' /etc/ssh/sshd_config
