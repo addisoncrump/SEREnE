@@ -29,7 +29,7 @@ struct SereneConfig {
 }
 
 #[group]
-#[commands(ping)]
+#[commands(source)]
 struct General;
 
 #[group]
@@ -93,13 +93,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             .teardown()
             .await?;
     }
-    Ok(())
-}
-
-#[command]
-async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.reply(ctx, "Pong!").await?;
-
     Ok(())
 }
 
@@ -219,5 +212,11 @@ async fn destroy_sandbox(ctx: &Context, msg: &Message) -> CommandResult {
             m
         })
         .await?;
+    Ok(())
+}
+
+#[command]
+async fn source(ctx: &Context, msg: &Message) -> CommandResult {
+    msg.reply(ctx, "https://github.com/VTCAKAVSMoACE/SEREnE").await?;
     Ok(())
 }

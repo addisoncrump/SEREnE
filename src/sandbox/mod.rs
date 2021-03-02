@@ -112,7 +112,8 @@ impl Sandbox {
             image: Some("serene-sandbox".to_string()),
             host_config: Some(host_config),
             env: Some(vec![format!(
-                "SSH_KEY=ssh-ed25519 {}",
+                "SSH_KEY={} {}",
+                pubkey.name(),
                 pubkey.public_key_base64()
             )]),
             exposed_ports: Some(exposed),

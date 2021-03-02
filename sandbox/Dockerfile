@@ -35,6 +35,8 @@ RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' a
         vim \
         ed"
 
+RUN unminimize
+
 # user setup
 RUN adduser \
         --system \
