@@ -6,8 +6,6 @@ use bollard::errors::Error;
 use bollard::models::{HostConfig, PortBinding, PortMap};
 use bollard::Docker;
 use log::*;
-use thrussh_keys::key::PublicKey;
-use thrussh_keys::PublicKeyBase64;
 use tokio::net::TcpListener;
 
 pub struct SandboxManager {

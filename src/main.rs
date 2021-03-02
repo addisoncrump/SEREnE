@@ -17,10 +17,11 @@ use serenity::prelude::TypeMapKey;
 use std::borrow::Cow;
 use std::error::Error;
 use std::sync::Arc;
-use thrussh_keys::key::{KeyPair, PublicKey};
+use thrussh_keys::key::KeyPair;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
+use thrussh_keys::PublicKeyBase64;
 
 #[derive(Deserialize)]
 struct SereneConfig {
@@ -135,7 +136,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             keypair = Some(Arc::new(
                 KeyPair::generate_ed25519().expect("keypair generation is supposed to be stable!"),
             ));
-            pubkey = format!("ssh-ed25519 {}", keypair.clone_public_key().public_key_base64());
+            pubkey = format!("ssh-ed25519 {}", keypair.clone().unwrap().clone_public_key().public_key_base64());
         } else {
             let _algo = args.single::<String>()?;
             let data = args.single::<String>()?;
@@ -146,7 +147,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                     return Ok(());
                 }
             }
-            args.restore()?;
+            args.restore();
             pubkey = args.rest().to_string();
         }
 
