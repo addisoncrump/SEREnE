@@ -30,7 +30,7 @@ impl SandboxManager {
     pub async fn create_sandbox(
         &mut self,
         id: u64,
-        pubkey: PublicKey,
+        pubkey: String,
     ) -> Result<Option<u16>, anyhow::Error> {
         if self.map.contains_key(&id) {
             return Ok(None);
@@ -90,7 +90,7 @@ pub struct Sandbox {
 }
 
 impl Sandbox {
-    async fn new(docker: Arc<Docker>, pubkey: PublicKey, port: u16) -> Result<Self, Error> {
+    async fn new(docker: Arc<Docker>, pubkey: String, port: u16) -> Result<Self, Error> {
         info!("initialising sandbox at port {}", port);
         let mut bindings = PortMap::new();
         bindings.insert(
@@ -112,9 +112,8 @@ impl Sandbox {
             image: Some("serene-sandbox".to_string()),
             host_config: Some(host_config),
             env: Some(vec![format!(
-                "SSH_KEY={} {}",
-                pubkey.name(),
-                pubkey.public_key_base64()
+                "SSH_KEY={}",
+                pubkey
             )]),
             exposed_ports: Some(exposed),
             ..Default::default()
@@ -176,13 +175,13 @@ mod test {
         let config = Arc::new(thrussh::client::Config::default());
         let client = TestClient {};
 
-        let _sandbox = manager
-            .create_sandbox(0, keypair.clone_public_key())
+        let sandbox = manager
+            .create_sandbox(0, format!("ssh-ed25519 {}", keypair.clone_public_key().public_key_base64()))
             .await?;
 
         sleep(Duration::from_secs(1)).await;
 
-        let mut session = thrussh::client::connect(config, "localhost:31337", client)
+        let mut session = thrussh::client::connect(config, format!("localhost:{}", sandbox.unwrap()), client)
             .await
             .unwrap();
         match session.authenticate_publickey("serene", keypair).await {

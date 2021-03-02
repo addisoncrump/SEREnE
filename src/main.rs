@@ -17,7 +17,7 @@ use serenity::prelude::TypeMapKey;
 use std::borrow::Cow;
 use std::error::Error;
 use std::sync::Arc;
-use thrussh_keys::key::KeyPair;
+use thrussh_keys::key::{KeyPair, PublicKey};
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
@@ -135,11 +135,19 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             keypair = Some(Arc::new(
                 KeyPair::generate_ed25519().expect("keypair generation is supposed to be stable!"),
             ));
-            pubkey = keypair.clone().unwrap().clone_public_key();
+            pubkey = format!("ssh-ed25519 {}", keypair.clone_public_key().public_key_base64());
         } else {
             let _algo = args.single::<String>()?;
             let data = args.single::<String>()?;
-            pubkey = thrussh_keys::parse_public_key_base64(&data)?;
+            match thrussh_keys::parse_public_key_base64(&data) {
+                Ok(_) => {}
+                Err(_) => {
+                    msg.reply(ctx, "Invalid key; try again?").await?;
+                    return Ok(());
+                }
+            }
+            args.restore()?;
+            pubkey = args.rest().to_string();
         }
 
         let port = {
