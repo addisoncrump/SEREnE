@@ -67,34 +67,24 @@ async fn main() -> Result<(), Box<dyn Error>> {
     config.read_to_string(&mut config_content).await?;
     let config: SereneConfig = toml::from_slice(config_content.as_ref()).unwrap();
 
-    // Login with a bot token from the environment
     let mut client = Client::builder(config.token)
         .event_handler(Handler)
         .framework(framework)
         .await
         .expect("Error creating client");
     {
-        // Open the data lock in write mode, so keys can be inserted to it.
         let mut data = client.data.write().await;
 
-        // The CommandCounter Value has the following type:
-        // Arc<RwLock<HashMap<String, u64>>>
-        // So, we have to insert the same type to it.
         data.insert::<SandboxWrapper>(Arc::new(RwLock::new(SandboxManager::new().await?)));
         data.insert::<Host>(Arc::new(config.host));
     }
 
-    // start listening for events by starting a single shard
     if let Err(why) = client.start().await {
         println!("An error occurred while running the client: {:?}", why);
     }
     {
-        // Open the data lock in write mode, so keys can be inserted to it.
         let data = client.data.read().await;
 
-        // The CommandCounter Value has the following type:
-        // Arc<RwLock<HashMap<String, u64>>>
-        // So, we have to insert the same type to it.
         data.get::<SandboxWrapper>()
             .unwrap()
             .clone()
@@ -116,15 +106,8 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
 #[command("spawn")]
 async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let (sandbox_lock, host) = {
-        // While data is a RwLock, it's recommended that you always open the lock as read.
-        // This is mainly done to avoid Deadlocks for having a possible writer waiting for multiple
-        // readers to close.
         let data_read = ctx.data.read().await;
 
-        // Since the CommandCounter Value is wrapped in an Arc, cloning will not duplicate the
-        // data, instead the reference is cloned.
-        // We wap every value on in an Arc, as to keep the data lock open for the least time possible,
-        // to again, avoid deadlocking it.
         (
             data_read
                 .get::<SandboxWrapper>()
