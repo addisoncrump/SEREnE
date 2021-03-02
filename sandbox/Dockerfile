@@ -30,7 +30,10 @@ RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' a
         screen \
         tmux \
         unzip \
-        git"
+        git \
+        nano \
+        vim \
+        ed"
 
 # user setup
 RUN adduser \

@@ -1,4 +1,4 @@
-# seREne
+# SEREnE
 
 ## features
 
