@@ -99,6 +99,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 #[command("spawn")]
 async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
+    msg.channel_id.start_typing(ctx.as_ref());
     let (sandbox_lock, host) = {
         let data_read = ctx.data.read().await;
 
@@ -197,6 +198,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
 
 #[command("destroy")]
 async fn destroy_sandbox(ctx: &Context, msg: &Message) -> CommandResult {
+    msg.channel_id.start_typing(ctx.as_ref());
     let sandbox_lock = {
         let data_read = ctx.data.read().await;
 
