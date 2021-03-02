@@ -43,8 +43,7 @@ RUN adduser \
         --group \
         --disabled-password \
         --home /home/serene \
-        serene && \
-    echo serene:U6aMy0wojraho | chpasswd -e
+        serene
 
 # gef
 ADD https://github.com/hugsy/gef/raw/master/gef.py /home/serene/.gdbinit-gef.py
