@@ -33,7 +33,8 @@ RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' a
         git \
         nano \
         vim \
-        ed"
+        ed \
+        man"
 
 RUN yes | unminimize
 
