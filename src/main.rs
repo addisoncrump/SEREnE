@@ -4,10 +4,7 @@ mod sandbox;
 
 use serenity::async_trait;
 use serenity::client::{Client, Context, EventHandler};
-use serenity::framework::standard::{
-    macros::{command, group},
-    Args, CommandResult, StandardFramework,
-};
+use serenity::framework::standard::{macros::{command, group, help}, Args, CommandResult, StandardFramework, HelpOptions, CommandGroup, help_commands};
 use serenity::model::channel::Message;
 
 use crate::sandbox::SandboxManager;
@@ -22,6 +19,8 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
 use thrussh_keys::PublicKeyBase64;
+use std::collections::HashSet;
+use serenity::model::id::UserId;
 
 #[derive(Deserialize)]
 struct SereneConfig {
@@ -31,10 +30,13 @@ struct SereneConfig {
 }
 
 #[group]
+#[description = "A group for general purpose commands."]
 #[commands(source)]
 struct General;
 
 #[group]
+#[only_in(guilds)]
+#[description = "A group with commands to manipulate the sandboxes."]
 #[commands(destroy_sandbox, spawn_sandbox)]
 struct Sandbox;
 
@@ -65,15 +67,21 @@ impl EventHandler for Handler {}
 async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    let framework = StandardFramework::new()
-        .configure(|c| c.prefix("~"))
-        .group(&GENERAL_GROUP)
-        .group(&SANDBOX_GROUP);
-
     let mut config = File::open("serene.toml").await?;
     let mut config_content = String::new();
     config.read_to_string(&mut config_content).await?;
     let config: SereneConfig = toml::from_slice(config_content.as_ref()).unwrap();
+
+    let mut owners = HashSet::new();
+    if let Some(owner) = config.owner {
+        owners.insert(UserId(owner));
+    }
+
+    let framework = StandardFramework::new()
+        .configure(|c| c.prefix("~").owners(owners))
+        .group(&GENERAL_GROUP)
+        .group(&SANDBOX_GROUP)
+        .help(&SERENE_HELP);
 
     let mut client = Client::builder(config.token)
         .event_handler(Handler)
@@ -103,6 +111,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 #[command("spawn")]
 #[aliases("start")]
+#[description = "Starts a sandbox. Optionally paste your SSH key after to use a pre-generated one."]
 async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     msg.channel_id.start_typing(ctx.as_ref())?;
     let (sandbox_lock, host) = {
@@ -197,8 +206,23 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
     }
 }
 
+#[help]
+#[command_not_found_text = "Could not find: `{}`."]
+#[max_levenshtein_distance(3)]
+async fn serene_help(
+    context: &Context,
+    msg: &Message,
+    args: Args,
+    help_options: &'static HelpOptions,
+    groups: &[&'static CommandGroup],
+    owners: HashSet<UserId>) -> CommandResult {
+    let _ = help_commands::with_embeds(context, msg, args, help_options, groups, owners).await;
+    Ok(())
+}
+
 #[command("destroy")]
 #[aliases("delete")]
+#[description = "Destroys your sandbox. Owners can use the `all` argument to delete all current sandboxes or a user id argument to delete a specific user's sandbox."]
 async fn destroy_sandbox(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     msg.channel_id.start_typing(ctx.as_ref())?;
     let (sandbox_lock, owner) = {
@@ -247,6 +271,7 @@ async fn destroy_sandbox(ctx: &Context, msg: &Message, args: Args) -> CommandRes
 }
 
 #[command]
+#[description = "Gets a link the source code :)"]
 async fn source(ctx: &Context, msg: &Message) -> CommandResult {
     msg.reply(ctx, "https://github.com/VTCAKAVSMoACE/SEREnE").await?;
     Ok(())

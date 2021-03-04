@@ -46,7 +46,6 @@ RUN yes | unminimize
 RUN adduser \
         --shell /bin/bash \
         --gecos "Serene sandbox user" \
-        --group \
         --disabled-password \
         --home /home/serene \
         serene
