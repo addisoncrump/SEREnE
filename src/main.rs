@@ -222,8 +222,11 @@ async fn destroy_sandbox(ctx: &Context, msg: &Message, args: Args) -> CommandRes
                 msg.reply(ctx, "All sandboxes destroyed.").await?;
                 return Ok(());
             } else if let Ok(arg) = arg.parse::<u64>() {
-                sandbox_lock.write().await.destroy_sandbox(arg).await?;
-                msg.reply(ctx, format!("Sandbox for {} destroyed.", arg)).await?;
+                if sandbox_lock.write().await.destroy_sandbox(arg).await? {
+                    msg.reply(ctx, format!("Sandbox for {} destroyed.", arg)).await?;
+                } else {
+                    msg.reply(ctx, format!("No sandbox for {}.", arg)).await?;
+                }
                 return Ok(());
             }
         }
