@@ -21,6 +21,7 @@ RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' a
         qemu-user-binfmt \
         build-essential \
         crossbuild-essential-* \
+        clang \
         default-jdk-headless \
         checksec \
         python3 \
@@ -34,13 +35,15 @@ RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' a
         nano \
         vim \
         ed \
-        man"
+        man \
+        fish \
+        zsh \
+        bash-completion"
 
 RUN yes | unminimize
 
 # user setup
 RUN adduser \
-        --system \
         --shell /bin/bash \
         --gecos "Serene sandbox user" \
         --group \

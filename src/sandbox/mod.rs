@@ -54,7 +54,7 @@ impl SandboxManager {
         self.map.get(&id).map(|sandbox| sandbox.port)
     }
 
-    pub async fn teardown(&self) -> Result<(), Error> {
+    pub async fn teardown(&mut self) -> Result<(), Error> {
         let mut filters = HashMap::new();
         filters.insert("ancestor", vec!["serene-sandbox"]);
         for container in self
@@ -76,6 +76,7 @@ impl SandboxManager {
                 )
                 .await?;
         }
+        self.map.clear();
 
         Ok(())
     }
@@ -154,12 +155,13 @@ mod test {
     use std::error::Error;
     use std::time::Duration;
 
-    use thrussh_keys::key::KeyPair;
+    use thrussh_keys::key::{KeyPair, PublicKey};
     use tokio::time::sleep;
 
     use super::*;
 
     use thrussh::{client, ChannelId};
+    use thrussh_keys::PublicKeyBase64;
 
     #[tokio::test]
     async fn launch_sandbox() -> Result<(), Box<dyn Error>> {

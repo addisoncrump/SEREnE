@@ -27,6 +27,7 @@ use thrussh_keys::PublicKeyBase64;
 struct SereneConfig {
     token: String,
     host: String,
+    owner: Option<u64>,
 }
 
 #[group]
@@ -47,6 +48,12 @@ struct Host;
 
 impl TypeMapKey for Host {
     type Value = Arc<String>;
+}
+
+struct Owner;
+
+impl TypeMapKey for Owner {
+    type Value = Arc<Option<u64>>;
 }
 
 struct Handler;
@@ -78,28 +85,26 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         data.insert::<SandboxWrapper>(Arc::new(RwLock::new(SandboxManager::new().await?)));
         data.insert::<Host>(Arc::new(config.host));
+        data.insert::<Owner>(Arc::new(config.owner));
     }
 
     if let Err(why) = client.start().await {
         println!("An error occurred while running the client: {:?}", why);
     }
-    {
-        let data = client.data.read().await;
-
-        data.get::<SandboxWrapper>()
-            .unwrap()
-            .clone()
-            .write()
-            .await
-            .teardown()
-            .await?;
-    }
+    client.data.read().await.get::<SandboxWrapper>()
+        .unwrap()
+        .clone()
+        .write()
+        .await
+        .teardown()
+        .await?;
     Ok(())
 }
 
 #[command("spawn")]
+#[aliases("start")]
 async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
-    msg.channel_id.start_typing(ctx.as_ref());
+    msg.channel_id.start_typing(ctx.as_ref())?;
     let (sandbox_lock, host) = {
         let data_read = ctx.data.read().await;
 
@@ -152,11 +157,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             pubkey = args.rest().to_string();
         }
 
-        let port = {
-            let mut manager = sandbox_lock.write().await;
-
-            manager.create_sandbox(msg.author.id.0, pubkey).await?
-        };
+        let port = sandbox_lock.write().await.create_sandbox(msg.author.id.0, pubkey).await?;
 
         if port.is_some() {
             msg.channel_id
@@ -171,7 +172,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                             },
                             writable,
                         )
-                        .unwrap();
+                            .unwrap();
                         m.add_file(AttachmentType::Bytes {
                             data: Cow::from(s),
                             filename: "serene-id_ed25519".to_string(),
@@ -197,22 +198,38 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
 }
 
 #[command("destroy")]
-async fn destroy_sandbox(ctx: &Context, msg: &Message) -> CommandResult {
-    msg.channel_id.start_typing(ctx.as_ref());
-    let sandbox_lock = {
+#[aliases("delete")]
+async fn destroy_sandbox(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+    msg.channel_id.start_typing(ctx.as_ref())?;
+    let (sandbox_lock, owner) = {
         let data_read = ctx.data.read().await;
 
-        data_read
-            .get::<SandboxWrapper>()
-            .expect("Expected SandboxWrapper in TypeMap.")
-            .clone()
+        (data_read
+             .get::<SandboxWrapper>()
+             .expect("Expected SandboxWrapper in TypeMap.")
+             .clone(),
+         data_read
+             .get::<Owner>()
+             .expect("Expected Owner in TypeMap.")
+             .clone())
     };
 
-    let destroyed = {
-        let mut manager = sandbox_lock.write().await;
-        manager.destroy_sandbox(msg.author.id.0).await?
-    };
+    if owner.is_some() && owner.unwrap() == msg.author.id.0 {
+        let arg = args.parse::<String>();
+        if let Ok(arg) = arg {
+            if arg == "all" {
+                sandbox_lock.write().await.teardown().await?;
+                msg.reply(ctx, "All sandboxes destroyed.").await?;
+                return Ok(());
+            } else if let Ok(arg) = arg.parse::<u64>() {
+                sandbox_lock.write().await.destroy_sandbox(arg).await?;
+                msg.reply(ctx, format!("Sandbox for {} destroyed.", arg)).await?;
+                return Ok(());
+            }
+        }
+    }
 
+    let destroyed = sandbox_lock.write().await.destroy_sandbox(msg.author.id.0).await?;
     msg.channel_id
         .send_message(ctx, |m| {
             if destroyed {
