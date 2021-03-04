@@ -37,3 +37,11 @@ Use `~help` to get started!
 
 As of right now, it's admittedly not the most configurable bot in the world. More of a proof-of-concept than anything
 professional.
+
+## I was able to escape the sandbox!
+
+Awesome! Tell me how and I'll give you brownie points. Tell Docker and they'll probably give you cash.
+
+## I had a probl-
+
+Please visit the [issues](https://github.com/VTCAKAVSMoACE/SEREnE/issues) page to report a bug.
