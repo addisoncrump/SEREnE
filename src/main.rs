@@ -111,7 +111,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
 #[command("spawn")]
 #[aliases("start")]
-#[description = "Starts a sandbox. Optionally paste your SSH key after to use a pre-generated one."]
+#[description = "Starts a sandbox. Paste your SSH key after to use a pre-generated key."]
 async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     msg.channel_id.start_typing(ctx.as_ref())?;
     let (sandbox_lock, host) = {
@@ -147,12 +147,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
     } else {
         let mut keypair = None;
         let pubkey;
-        if args.is_empty() {
-            keypair = Some(Arc::new(
-                KeyPair::generate_ed25519().expect("keypair generation is supposed to be stable!"),
-            ));
-            pubkey = format!("ssh-ed25519 {}", keypair.clone().unwrap().clone_public_key().public_key_base64());
-        } else {
+        if !args.is_empty() {
             let _algo = args.single::<String>()?;
             let data = args.single::<String>()?;
             match thrussh_keys::parse_public_key_base64(&data) {
@@ -164,6 +159,9 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             }
             args.restore();
             pubkey = args.rest().to_string();
+        } else {
+            msg.reply(ctx, "Make sure to paste your PUBLIC key after the spawn command!").await?;
+            return Ok(());
         }
 
         let port = sandbox_lock.write().await.create_sandbox(msg.author.id.0, pubkey).await?;
