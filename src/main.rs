@@ -187,7 +187,7 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                             filename: "serene-id_ed25519".to_string(),
                         });
                         m.content(format!(
-                            "Started a sandbox for you; connect with: ```ssh -i serene-id_25519 -p {} serene@{}```",
+                            "Started a sandbox for you; connect with: ```ssh -i serene-id_ed25519 -p {} serene@{}```",
                             port.unwrap(),
                             host
                         ));
