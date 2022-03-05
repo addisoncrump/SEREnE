@@ -9,16 +9,12 @@ use serenity::model::channel::Message;
 
 use crate::sandbox::SandboxManager;
 use serde::Deserialize;
-use serenity::http::AttachmentType;
 use serenity::prelude::TypeMapKey;
-use std::borrow::Cow;
 use std::error::Error;
 use std::sync::Arc;
-use thrussh_keys::key::KeyPair;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
-use thrussh_keys::PublicKeyBase64;
 use std::collections::HashSet;
 use serenity::model::id::UserId;
 
@@ -145,7 +141,6 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
             .await?;
         Ok(())
     } else {
-        let mut keypair = None;
         let pubkey;
         if !args.is_empty() {
             let _algo = args.single::<String>()?;
@@ -169,33 +164,11 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         if port.is_some() {
             msg.channel_id
                 .send_message(ctx, |m| {
-                    if keypair.is_some() {
-                        let mut s = Vec::new();
-                        let writable = Box::new(&mut s);
-                        thrussh_keys::encode_pkcs8_pem(
-                            &*match keypair {
-                                Some(x) => x,
-                                None => unimplemented!(),
-                            },
-                            writable,
-                        )
-                            .unwrap();
-                        m.add_file(AttachmentType::Bytes {
-                            data: Cow::from(s),
-                            filename: "serene-id_ed25519".to_string(),
-                        });
-                        m.content(format!(
-                            "Started a sandbox for you; connect with: ```ssh -i serene-id_ed25519 -p {} serene@{}```",
-                            port.unwrap(),
-                            host
-                        ));
-                    } else {
-                        m.content(format!(
-                            "Started a sandbox for you; connect with: ```ssh -p {} serene@{}```",
-                            port.unwrap(),
-                            host
-                        ));
-                    }
+                    m.content(format!(
+                        "Started a sandbox for you; connect with: ```ssh -p {} serene@{}```",
+                        port.unwrap(),
+                        host
+                    ));
                     m
                 })
                 .await?;
