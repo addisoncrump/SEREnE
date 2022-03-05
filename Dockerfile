@@ -6,7 +6,7 @@ ADD Cargo.lock Cargo.toml ./
 RUN cargo build --release
 
 RUN rm -rf src
-COPY src /home/rust/src/src
+COPY --chown=rust:rust src /home/rust/src/src
 RUN find src -exec touch {} \;
 RUN cargo build --release
 
