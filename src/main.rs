@@ -14,7 +14,7 @@ use serenity::prelude::TypeMapKey;
 use std::borrow::Cow;
 use std::error::Error;
 use std::sync::Arc;
-use thrussh_keys::key::{KeyPair, SignatureHash};
+use thrussh_keys::key::KeyPair;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::RwLock;
@@ -149,9 +149,9 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
         let pubkey;
         if args.is_empty() {
             keypair = Some(Arc::new(
-                KeyPair::generate_rsa(4096, SignatureHash::SHA2_256).expect("keypair generation is supposed to be stable!"),
+                KeyPair::generate_ed25519().expect("keypair generation is supposed to be stable!"),
             ));
-            pubkey = format!("ssh-rsa {}", keypair.clone().unwrap().clone_public_key().public_key_base64());
+            pubkey = format!("ssh-ed25519 {}", keypair.clone().unwrap().clone_public_key().public_key_base64());
         } else {
             let _algo = args.single::<String>()?;
             let data = args.single::<String>()?;
@@ -184,10 +184,10 @@ async fn spawn_sandbox(ctx: &Context, msg: &Message, mut args: Args) -> CommandR
                             .unwrap();
                         m.add_file(AttachmentType::Bytes {
                             data: Cow::from(s),
-                            filename: "serene-id_rsa".to_string(),
+                            filename: "serene-id_ed25519".to_string(),
                         });
                         m.content(format!(
-                            "Started a sandbox for you; connect with: ```ssh -i serene-id_rsa -p {} serene@{}```",
+                            "Started a sandbox for you; connect with: ```ssh -i serene-id_25519 -p {} serene@{}```",
                             port.unwrap(),
                             host
                         ));
