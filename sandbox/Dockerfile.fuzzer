@@ -36,7 +36,7 @@ ADD https://github.com/hugsy/gef/raw/master/gef.py /home/serene/.gdbinit-gef.py
 RUN echo source ~/.gdbinit-gef.py >> /home/serene/.gdbinit
 
 # rust
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # sshd_config
 RUN sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config && \
