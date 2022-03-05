@@ -7,6 +7,7 @@ RUN cargo build --release
 
 RUN rm -rf src
 COPY src /home/rust/src/src
+RUN find src -exec touch {} \;
 RUN cargo build --release
 
 FROM scratch
