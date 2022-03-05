@@ -1,0 +1,54 @@
+FROM ubuntu:focal
+
+# faster, generally speaking
+RUN sed -i 's/archive.ubuntu.com/mirror.leaseweb.net/g' /etc/apt/sources.list
+
+# big ol' package install
+RUN apt update; apt -y dist-upgrade; bash -c "DEBIAN_FRONTEND='noninteractive' apt install -y --autoremove \
+        gdb-multiarch \
+        build-essential \
+        clang \
+        openssh-server \
+        curl \
+        screen \
+        tmux \
+        unzip \
+        git \
+        nano \
+        vim \
+        ed \
+        man \
+        zsh \
+        bash-completion"
+
+RUN yes | unminimize
+
+# user setup
+RUN adduser \
+        --shell /bin/bash \
+        --gecos "Serene sandbox user" \
+        --disabled-password \
+        --home /home/serene \
+        serene
+
+# gef
+ADD https://github.com/hugsy/gef/raw/master/gef.py /home/serene/.gdbinit-gef.py
+RUN echo source ~/.gdbinit-gef.py >> /home/serene/.gdbinit
+
+# sshd_config
+RUN sed -i 's/^#PasswordAuthentication .*$/PasswordAuthentication no/g' /etc/ssh/sshd_config && \
+    sed -i 's/^#AllowAgentForwarding .*$/AllowAgentForwarding no/g' /etc/ssh/sshd_config && \
+    sed -i 's/^#AllowTcpForwarding .*$/AllowTcpForwarding no/g' /etc/ssh/sshd_config && \
+    sed -i 's/^X11Forwarding .*$/X11Forwarding no/g' /etc/ssh/sshd_config
+
+# init authorized_keys
+RUN mkdir -p /home/serene/.ssh && \
+    touch /home/serene/.ssh/authorized_keys && \
+    chmod 700 /home/serene/.ssh && \
+    chmod 600 /home/serene/.ssh/authorized_keys && \
+    chown -hR serene:serene /home/serene
+
+# https://bugs.launchpad.net/ubuntu/+source/openssh/+bug/45234/comments/7
+RUN mkdir -p /run/sshd
+
+CMD echo "$SSH_KEY" > /home/serene/.ssh/authorized_keys; /usr/sbin/sshd -D -f /etc/ssh/sshd_config
