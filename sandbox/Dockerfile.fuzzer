@@ -37,7 +37,7 @@ RUN echo source ~/.gdbinit-gef.py >> /home/serene/.gdbinit
 
 # rust
 USER serene
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly
 RUN /home/serene/.cargo/bin/cargo install cargo-fuzz
 USER root
 
